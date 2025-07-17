@@ -1,23 +1,28 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-require("dotenv").config(); // Load MongoDB URI from .env
+require("dotenv").config(); // Load .env
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-
-// Replace this with your actual MongoDB URI in .env
+const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGO_URI;
 
 // Middleware
 app.use(cors());
 
-// MongoDB connection
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// ✅ MongoDB connection with TLS enforced
+mongoose
+  .connect(MONGODB_URI, {
+    ssl: true, // 👈 required for Render + MongoDB Atlas
+    serverApi: { version: '1' }, // 👈 helps with latest MongoDB versions
+  })
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
 
+// Schema
 const counterSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   visits: { type: Number, default: 0 },
@@ -32,7 +37,7 @@ async function initializeCounter() {
   }
 }
 
-// Route to get current count (without increment)
+// Route: Get current count
 app.get("/view", async (req, res) => {
   try {
     await initializeCounter();
@@ -44,7 +49,7 @@ app.get("/view", async (req, res) => {
   }
 });
 
-// Route to increment and return view count
+// Route: Increment and return count
 app.get("/", async (req, res) => {
   try {
     await initializeCounter();
@@ -60,6 +65,7 @@ app.get("/", async (req, res) => {
   }
 });
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`✅ MongoDB Counter server running at http://localhost:${PORT}`);
+  console.log(`✅ Server running at http://localhost:${PORT}`);
 });
