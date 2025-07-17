@@ -25,7 +25,7 @@ mongoose
 // Schema
 const counterSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
-  visits: { type: Number, default: 0 },
+  visits: { type: Number, default: 500 },
 });
 
 const Counter = mongoose.model("Counter", counterSchema);
