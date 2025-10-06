@@ -15,13 +15,12 @@ const corsOptions = {
       "https://www.nriproperty.uk",
       "http://localhost:3000",
       "http://localhost:5173",
-      '*'
     ];
 
     // Allow requests with no origin (mobile apps, Postman, curl)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
@@ -34,7 +33,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Handle preflight requests
+// Removed the problematic app.options("*", ...) line
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -457,7 +456,7 @@ app.post("/api/query", checkDBConnection, async (req, res) => {
 app.use((req, res) => {
   res.status(404).json({
     error: "Route not found",
-    message: `Cannot ${req.method} ${req.path}`,
+    message: "Cannot " + req.method + " " + req.path,
     availableRoutes: ["/", "/health", "/view", "/api/query"],
   });
 });
