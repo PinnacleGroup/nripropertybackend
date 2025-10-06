@@ -14,7 +14,8 @@ const corsOptions = {
       "https://nriproperty.uk",
       "https://www.nriproperty.uk",
       "http://localhost:3000",
-      "http://localhost:5173"
+      "http://localhost:5173",
+      '*'
     ];
 
     // Allow requests with no origin (mobile apps, Postman, curl)
