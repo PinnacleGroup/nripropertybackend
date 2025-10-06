@@ -6,61 +6,81 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGO_URI;
 
-// Middleware
+// CORS Configuration
 const corsOptions = {
-  origin: "https://nriproperty.uk", // frontend URL
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "https://nriproperty.uk",
+      "https://www.nriproperty.uk",
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ];
+
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: false, // remove true unless you send cookies
+  credentials: false,
+  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Handle preflight requests
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// MongoDB connection
-// mongoose
-//   .connect(MONGODB_URI, {
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true,
-//     family: 4, // 👈 Forces IPv4 instead of IPv6
-//   })
-//   .then(() => console.log("✅ Connected to MongoDB Atlas"))
-//   .catch((err) => {
-//     console.error("❌ MongoDB connection error:", err.message);
-//     process.exit(1);
-//   });
+// MongoDB Connection with Error Handling
+mongoose.set("strictQuery", false);
 
-
-
-async function connectWithRetry() {
+const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       family: 4,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
     });
-    console.log("✅ Connected to MongoDB Atlas");
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
-    setTimeout(connectWithRetry, 5000); // retry after 5s
+
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`❌ MongoDB Error: ${error.message}`);
+    console.log("⏳ Retrying connection in 5 seconds...");
+    setTimeout(connectDB, 5000);
   }
-}
-connectWithRetry();
+};
 
+connectDB();
 
+// MongoDB Event Listeners
+mongoose.connection.on("disconnected", () => {
+  console.log("⚠️ MongoDB disconnected. Attempting to reconnect...");
+  setTimeout(connectDB, 5000);
+});
 
-// Counter Schema
+mongoose.connection.on("error", (err) => {
+  console.error("❌ MongoDB error:", err.message);
+});
+
+mongoose.connection.on("connected", () => {
+  console.log("✅ MongoDB connection established");
+});
+
+// Schemas
 const counterSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   visits: { type: Number, default: 500 },
 });
 
-const Counter = mongoose.model("Counter", counterSchema);
-
-// Enquiry Schema
 const enquirySchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
@@ -76,68 +96,108 @@ const enquirySchema = new mongoose.Schema({
   submittedAt: { type: Date, default: Date.now },
 });
 
+const Counter = mongoose.model("Counter", counterSchema);
 const Enquiry = mongoose.model("Enquiry", enquirySchema);
 
-// Nodemailer Setup
+// Nodemailer Configuration
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465, // secure port
-  secure: true, // true for port 465, false for 587
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
 
-// Verify email config on startup
+// Verify email configuration
 transporter.verify((error, success) => {
   if (error) {
-    console.error("Email configuration error:", error);
+    console.error("❌ Email configuration error:", error);
   } else {
-    console.log("Email server ready to send messages");
+    console.log("✅ Email server ready to send messages");
   }
 });
 
 // Helper Functions
 async function initializeCounter() {
-  const existing = await Counter.findOne({ name: "pageViews" });
-  if (!existing) {
-    await Counter.create({ name: "pageViews", visits: 0 });
+  try {
+    const existing = await Counter.findOne({ name: "pageViews" });
+    if (!existing) {
+      await Counter.create({ name: "pageViews", visits: 500 });
+      console.log("✅ Counter initialized");
+    }
+  } catch (error) {
+    console.error("Error initializing counter:", error);
   }
 }
 
+// Middleware to check DB connection
+const checkDBConnection = (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      error: "Database connection unavailable",
+      message: "Please try again in a moment",
+    });
+  }
+  next();
+};
+
 // Routes
 
-// Get current count
-app.get("/view", async (req, res) => {
-  try {
-    await initializeCounter();
-    const counter = await Counter.findOne({ name: "pageViews" });
-    res.json({ visits: counter.visits });
-  } catch (err) {
-    console.error("Error fetching count:", err);
-    res.status(500).json({ error: "Failed to fetch view count" });
-  }
+// Health Check Endpoint (IMPORTANT for Render)
+app.get("/health", (req, res) => {
+  const dbStatus =
+    mongoose.connection.readyState === 1 ? "connected" : "disconnected";
+
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    database: dbStatus,
+    uptime: Math.floor(process.uptime()),
+    environment: process.env.NODE_ENV || "development",
+  });
 });
 
-// Increment and return count
-app.get("/", async (req, res) => {
+// Root endpoint
+app.get("/", checkDBConnection, async (req, res) => {
   try {
     await initializeCounter();
     const counter = await Counter.findOneAndUpdate(
       { name: "pageViews" },
       { $inc: { visits: 1 } },
-      { new: true }
+      { new: true, upsert: true }
     );
-    res.json({ visits: counter.visits });
+
+    res.json({
+      message: "NRI Property Backend API",
+      visits: counter.visits,
+      status: "active",
+    });
   } catch (err) {
     console.error("Error updating count:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// Handle form submission
-app.post("/api/query", async (req, res) => {
+// Get current visit count
+app.get("/view", checkDBConnection, async (req, res) => {
+  try {
+    await initializeCounter();
+    const counter = await Counter.findOne({ name: "pageViews" });
+
+    res.json({
+      visits: counter ? counter.visits : 0,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("Error fetching count:", err);
+    res.status(500).json({ error: "Failed to fetch view count" });
+  }
+});
+
+// Handle enquiry form submission
+app.post("/api/query", checkDBConnection, async (req, res) => {
   try {
     const {
       name,
@@ -153,7 +213,7 @@ app.post("/api/query", async (req, res) => {
       indiaDateTime,
     } = req.body;
 
-    // Validate required fields
+    // Validation
     if (
       !name ||
       !email ||
@@ -164,15 +224,37 @@ app.post("/api/query", async (req, res) => {
       !time ||
       !message
     ) {
-      return res.status(400).json({ error: "All fields are required" });
+      return res.status(400).json({
+        error: "All fields are required",
+        missing: Object.keys(req.body).filter((key) => !req.body[key]),
+      });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
     }
 
     // Save to database
-    const enquiry = new Enquiry(req.body);
-    await enquiry.save();
-    console.log(`Enquiry saved to database: ${name}`);
+    const enquiry = new Enquiry({
+      name,
+      email,
+      country,
+      countryCode,
+      phone,
+      service,
+      date,
+      time,
+      message,
+      userDateTime: userDateTime || "",
+      indiaDateTime: indiaDateTime || "",
+    });
 
-    // Send email to ADMIN
+    await enquiry.save();
+    console.log(`✅ Enquiry saved: ${name} - ${service}`);
+
+    // Admin Email
     const adminMailOptions = {
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_RECIPIENT,
@@ -251,20 +333,16 @@ app.post("/api/query", async (req, res) => {
           </div>
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">
-            <p>This enquiry was submitted on ${new Date().toLocaleString(
-              "en-IN",
-              { timeZone: "Asia/Kolkata" }
-            )} IST</p>
+            <p>Submitted on ${new Date().toLocaleString("en-IN", {
+              timeZone: "Asia/Kolkata",
+            })} IST</p>
             <p>Please respond to the client as soon as possible.</p>
           </div>
         </div>
       `,
     };
 
-    await transporter.sendMail(adminMailOptions);
-    console.log(`Admin email sent to ${process.env.EMAIL_RECIPIENT}`);
-
-    // Send confirmation email to USER
+    // User Confirmation Email
     const userMailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
@@ -321,7 +399,6 @@ app.post("/api/query", async (req, res) => {
               <p style="font-size: 14px; color: #666; margin: 5px 0;">${
                 process.env.EMAIL_RECIPIENT
               }</p>
-              
             </div>
           </div>
 
@@ -337,22 +414,89 @@ app.post("/api/query", async (req, res) => {
       `,
     };
 
-    await transporter.sendMail(userMailOptions);
-    console.log(`Confirmation email sent to user: ${email}`);
+    // Send both emails
+    await Promise.all([
+      transporter.sendMail(adminMailOptions),
+      transporter.sendMail(userMailOptions),
+    ]);
+
+    console.log(`✅ Emails sent successfully for enquiry: ${name}`);
 
     res.status(200).json({
       success: true,
       message: "Enquiry submitted successfully! We'll contact you soon.",
+      enquiryId: enquiry._id,
     });
   } catch (err) {
-    console.error("Error processing enquiry:", err);
+    console.error("❌ Error processing enquiry:", err);
+
+    // Distinguish between different error types
+    if (err.name === "ValidationError") {
+      return res.status(400).json({
+        error: "Validation failed",
+        details: err.message,
+      });
+    }
+
+    if (err.code === 11000) {
+      return res.status(409).json({
+        error: "Duplicate entry",
+        message: "This enquiry may have already been submitted",
+      });
+    }
+
     res.status(500).json({
-      error: "Failed to submit enquiry. Please try again later.",
+      error: "Failed to submit enquiry",
+      message: "Please try again later or contact support",
     });
   }
 });
 
-// Start server
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    message: `Cannot ${req.method} ${req.path}`,
+    availableRoutes: ["/", "/health", "/view", "/api/query"],
+  });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("❌ Global error:", err);
+
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({
+      error: "CORS policy violation",
+      message: "Your origin is not allowed to access this resource",
+    });
+  }
+
+  res.status(500).json({
+    error: "Internal server error",
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Something went wrong"
+        : err.message,
+  });
+});
+
+// Graceful Shutdown
+process.on("SIGTERM", async () => {
+  console.log("⚠️ SIGTERM received. Closing server gracefully...");
+  await mongoose.connection.close();
+  process.exit(0);
+});
+
+process.on("SIGINT", async () => {
+  console.log("⚠️ SIGINT received. Closing server gracefully...");
+  await mongoose.connection.close();
+  process.exit(0);
+});
+
+// Start Server
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
 });
