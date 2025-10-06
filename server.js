@@ -10,11 +10,7 @@ const MONGODB_URI = process.env.MONGO_URI;
 
 // Middleware
 app.use(
-  cors({
-    origin: ["https://nriproperty.uk"], // ✅ Replace with your GoDaddy React domain
-    methods: ["GET", "POST"],
-    credentials: true,
-  })
+  cors()
 );
 app.use(express.json());
 
