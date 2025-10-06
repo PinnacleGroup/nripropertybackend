@@ -11,25 +11,43 @@ const MONGODB_URI = process.env.MONGO_URI;
 // Middleware
 app.use(
   cors({
-    origin: '*',
+    origin: ['https://nriproperty.uk', 'https://www.nriproperty.uk'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
   })
 );
 app.use(express.json());
 
-// MongoDB connection
-mongoose
-  .connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    family: 4, // 👈 Forces IPv4 instead of IPv6
-  })
-  .then(() => console.log("✅ Connected to MongoDB Atlas"))
-  .catch((err) => {
+// MongoDB connection with retry logic
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      family: 4,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    });
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+  } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1);
-  });
+    console.error("Retrying connection in 5 seconds...");
+    setTimeout(connectDB, 5000);
+  }
+};
+
+connectDB();
+
+// MongoDB event handlers
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB runtime error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️ MongoDB disconnected. Attempting to reconnect...');
+  setTimeout(connectDB, 5000);
+});
 
 // Counter Schema
 const counterSchema = new mongoose.Schema({
@@ -60,8 +78,8 @@ const Enquiry = mongoose.model("Enquiry", enquirySchema);
 // Nodemailer Setup
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465, // secure port
-  secure: true, // true for port 465, false for 587
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -71,9 +89,9 @@ const transporter = nodemailer.createTransport({
 // Verify email config on startup
 transporter.verify((error, success) => {
   if (error) {
-    console.error("Email configuration error:", error);
+    console.error("❌ Email configuration error:", error);
   } else {
-    console.log("Email server ready to send messages");
+    console.log("✅ Email server ready to send messages");
   }
 });
 
@@ -86,6 +104,15 @@ async function initializeCounter() {
 }
 
 // Routes
+
+// Health check route
+app.get("/health", (req, res) => {
+  res.json({ 
+    status: "OK", 
+    message: "Server is running",
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Get current count
 app.get("/view", async (req, res) => {
@@ -117,6 +144,8 @@ app.get("/", async (req, res) => {
 
 // Handle form submission
 app.post("/api/query", async (req, res) => {
+  console.log("📨 Received form submission:", req.body.name, req.body.email);
+  
   try {
     const {
       name,
@@ -149,7 +178,7 @@ app.post("/api/query", async (req, res) => {
     // Save to database
     const enquiry = new Enquiry(req.body);
     await enquiry.save();
-    console.log(`Enquiry saved to database: ${name}`);
+    console.log(`✅ Enquiry saved to database: ${name}`);
 
     // Send email to ADMIN
     const adminMailOptions = {
@@ -241,7 +270,7 @@ app.post("/api/query", async (req, res) => {
     };
 
     await transporter.sendMail(adminMailOptions);
-    console.log(`Admin email sent to ${process.env.EMAIL_RECIPIENT}`);
+    console.log(`✅ Admin email sent to ${process.env.EMAIL_RECIPIENT}`);
 
     // Send confirmation email to USER
     const userMailOptions = {
@@ -300,7 +329,6 @@ app.post("/api/query", async (req, res) => {
               <p style="font-size: 14px; color: #666; margin: 5px 0;">${
                 process.env.EMAIL_RECIPIENT
               }</p>
-              
             </div>
           </div>
 
@@ -317,21 +345,41 @@ app.post("/api/query", async (req, res) => {
     };
 
     await transporter.sendMail(userMailOptions);
-    console.log(`Confirmation email sent to user: ${email}`);
+    console.log(`✅ Confirmation email sent to user: ${email}`);
 
     res.status(200).json({
       success: true,
       message: "Enquiry submitted successfully! We'll contact you soon.",
     });
   } catch (err) {
-    console.error("Error processing enquiry:", err);
+    console.error("❌ Error processing enquiry:", err);
     res.status(500).json({
       error: "Failed to submit enquiry. Please try again later.",
     });
   }
 });
 
+// 404 handler - Must be after all routes
+app.use((req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.path}`);
+  res.status(404).json({ 
+    error: "Route not found", 
+    path: req.path,
+    method: req.method 
+  });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('❌ Server error:', err);
+  res.status(500).json({ 
+    error: "Internal server error",
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
 });
