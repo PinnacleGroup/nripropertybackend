@@ -9,23 +9,46 @@ const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGO_URI;
 
 // Middleware
-app.use(
-  cors()
-);
+app.use(cors({
+  origin: "https://nriproperty.uk", // your frontend URL
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"],
+}));
+
 app.use(express.json());
 
 // MongoDB connection
-mongoose
-  .connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    family: 4, // 👈 Forces IPv4 instead of IPv6
-  })
-  .then(() => console.log("✅ Connected to MongoDB Atlas"))
-  .catch((err) => {
+// mongoose
+//   .connect(MONGODB_URI, {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true,
+//     family: 4, // 👈 Forces IPv4 instead of IPv6
+//   })
+//   .then(() => console.log("✅ Connected to MongoDB Atlas"))
+//   .catch((err) => {
+//     console.error("❌ MongoDB connection error:", err.message);
+//     process.exit(1);
+//   });
+
+
+
+
+  async function connectWithRetry() {
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      family: 4,
+    });
+    console.log("✅ Connected to MongoDB Atlas");
+  } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1);
-  });
+    console.log("Retrying in 5 seconds...");
+    setTimeout(connectWithRetry, 5000);
+  }
+}
+connectWithRetry();
+
 
 // Counter Schema
 const counterSchema = new mongoose.Schema({
