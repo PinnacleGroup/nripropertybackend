@@ -27,10 +27,19 @@ const __dirname = path.dirname(__filename);
 // 🔒 CORS Setup
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL || "http://localhost:5173" || "https://nriproperty.uk" || "https://www.nriproperty.uk" || "www.nriproperty.uk"],
-    methods: ["GET", "POST"],
+    origin: [
+      "http://localhost:5173",
+      "https://nriproperty.uk",
+      "https://www.nriproperty.uk",
+      "https://nripropertybackend.onrender.com",
+      "nriproperty.uk",
+      "www.nriproperty.uk",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
   })
 );
+
 app.use(express.json());
 
 // 🧩 MongoDB Connection
