@@ -27,7 +27,7 @@ router.get("/path/:email", async (req, res) => {
     // ✅ IMPORTANT: File is stored in ADMIN backend
     // locally -> http://localhost:5001
     // on render -> https://your-admin-backend-domain.com
-    const fullUrl = `http://localhost:5001/${normalizedPath}`;
+    const fullUrl = `https://nripropertybackend.onrender.com/${normalizedPath}`;
 
     console.log("✅ Final Contract URL:", fullUrl);
 
