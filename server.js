@@ -1,7 +1,8 @@
 import express from "express";
-const mongoose = require("mongoose");
-const cors = require("cors");
-require("dotenv").config(); // Load .env file
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+dotenv.config(); // Load .env file
 
 const app = express();
 const PORT = process.env.PORT; // ✅ Use only Render-assigned port in production
