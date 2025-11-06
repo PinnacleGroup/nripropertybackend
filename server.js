@@ -59,14 +59,15 @@ mongoose.connection.once("open", async () => {
 });
 
 // 🛣️ ROUTES (✅ Put after app is defined)
-app.use("/api", viewsRouter);
+app.use("/api/views", viewsRouter);  
 app.use("/api/register", registerRoute);
 app.use("/api/check-email", checkEmailRoute);
 app.use("/api/auth", otpAuthRoute);
 app.use("/api/support", ClientSupportRoute);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/contract", contractRoutes); // ✅ Added contract routes
-app.use("/api", signedContractRoutes);
+app.use("/api/contract-signed", signedContractRoutes);   // ✅ namespace added
+                    // ✅ placed after, unique prefix
 app.use("/uploads", express.static("uploads")); // allow access to uploaded files
 
 // ✅ ROOT CHECK
