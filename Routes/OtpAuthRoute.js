@@ -20,7 +20,7 @@ router.get("/test", (req, res) => {
 const sendEmail = async (toEmail, name, otp) => {
   try {
     await brevoClient.sendTransacEmail({
-      sender: { name: "NRIPROPERTY.UK", email: "info@nriproperty.uk" },
+      sender: { name: "NRIPROPERTY.UK", email: "pinnacle.chd@gmail.com" },
       to: [{ email: toEmail }],
       subject: "Your OTP for Login - NRIPROPERTY.UK",
       htmlContent: `
