@@ -79,6 +79,28 @@ app.use("/uploads", express.static("uploads")); // allow access to uploaded file
 // ✅ ROOT CHECK
 app.get("/", (req, res) => res.send("Backend running ✅"));
 
+// GET User Info by Email
+app.get("/api/user-details", async (req, res) => {
+  try {
+    const email = req.query.email; // frontend will send ?email=...
+
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await New_Queries.findOne({ email: email });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    return res.json({
+      name: user.name,
+      customid: user.Customid,
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Server Error" });
+  }
+});
+
 // 🚀 START SERVER
 app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`)
