@@ -1,18 +1,50 @@
 import express from "express";
 import mongoose from "mongoose";
-import nodemailer from "nodemailer";
+// import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import VerifiedUser from "../Models/VerifiedUserSchema.js";
+import SibApiV3Sdk from "@getbrevo/brevo";
 
 const router = express.Router();
+const brevoClient = new SibApiV3Sdk.TransactionalEmailsApi();
+brevoClient.setApiKey(
+  SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
 
 // Test route to check if route is working
 router.get("/test", (req, res) => {
   res.json({ success: true, message: "OTP Auth route is working!" });
 });
 
+const sendEmail = async (toEmail, name, otp) => {
+  try {
+    await brevoClient.sendTransacEmail({
+      sender: { name: "NRIPROPERTY.UK", email: "no-reply@nriproperty.uk" },
+      to: [{ email: toEmail }],
+      subject: "Your OTP for Login - NRIPROPERTY.UK",
+      htmlContent: `
+      <div style="font-family: Arial, sans-serif;">
+        <h2>Hello ${name},</h2>
+        <p>Your one-time password for Login is:</p>
+        <h1 style="font-size: 32px; letter-spacing: 6px;">${otp}</h1>
+        <p>Valid for 10 minutes.</p>
+        <br />
+        <p>If you did not request this, please ignore.</p>
+      </div>
+      `,
+    });
+    console.log("✅ Email sent via Brevo API");
+  } catch (error) {
+    console.log("❌ Brevo API Email Error:", error);
+    throw new Error("Email sending failed");
+  }
+};
+
 // ✅ FIX: Create transporter function instead of global variable
 // This ensures environment variables are loaded when function is called
+
+/*
 const createTransporter = () => {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.error("❌ SMTP credentials missing:");
@@ -56,8 +88,9 @@ const createTransporter = () => {
   });
 
 };
-
+*/
 // Test SMTP connection on startup (optional but helpful for debugging)
+/*
 try {
   const testTransporter = createTransporter();
   testTransporter.verify((error, success) => {
@@ -70,7 +103,7 @@ try {
 } catch (error) {
   console.error("❌ Email transporter initialization error:", error.message);
 }
-
+*/
 // Generate 6-digit OTP
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -279,9 +312,13 @@ router.post("/send-otp", async (req, res) => {
     };
 
     // Send email
+    /*
     console.log("📤 Sending email to:", user.email);
     const info = await transporter.sendMail(mailOptions);
     console.log("✅ Email sent successfully! Message ID:", info.messageId);
+*/
+    console.log("📤 Sending email via Brevo API:", user.email);
+    await sendEmail(user.email, user.name, otp);
 
     res.status(200).json({
       success: true,
