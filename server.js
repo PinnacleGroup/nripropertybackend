@@ -25,28 +25,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 🔒 CORS Setup
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://nriproperty.uk",
-      "https://www.nriproperty.uk",
-      "https://nripropertybackend.onrender.com",
-      "nriproperty.uk",
-      "www.nriproperty.uk",
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-  })
-);
-
 // app.use(
 //   cors({
-//     origin: ["*"],
+//     origin: [
+//       "http://localhost:5173",
+//       "https://nriproperty.uk",
+//       "https://www.nriproperty.uk",
+//       "https://nripropertybackend.onrender.com",
+//       "nriproperty.uk",
+//       "www.nriproperty.uk",
+//     ],
 //     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 //     credentials: true,
 //   })
 // );
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  })
+);
 
 app.use(express.json());
 
