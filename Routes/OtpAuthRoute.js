@@ -26,18 +26,35 @@ const createTransporter = () => {
     throw new Error("SMTP credentials not configured");
   }
 
+
+
   console.log(
     "✅ Creating email transporter with user:",
     process.env.SMTP_USER
   );
 
+  // return nodemailer.createTransport({
+  //   service: "gmail",
+  //   auth: {
+  //     user: process.env.SMTP_USER,
+  //     pass: process.env.SMTP_PASS,
+  //   },
+  // });
+
+
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // STARTTLS
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      pass: process.env.SMTP_PASS, // MUST be App Password
     },
+    tls: {
+      rejectUnauthorized: false
+    }
   });
+
 };
 
 // Test SMTP connection on startup (optional but helpful for debugging)
