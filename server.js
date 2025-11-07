@@ -92,7 +92,7 @@ app.get("/api/user-details", async (req, res) => {
 
     return res.json({
       name: user.name,
-      customid: user.Customid,
+      customid: user.customId,
     });
 
   } catch (error) {
