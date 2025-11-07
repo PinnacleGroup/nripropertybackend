@@ -24,15 +24,39 @@ const sendEmail = async (toEmail, name, otp) => {
       to: [{ email: toEmail }],
       subject: "Your OTP for Login - NRIPROPERTY.UK",
       htmlContent: `
-      <div style="font-family: Arial, sans-serif;">
-        <h2>Hello ${name},</h2>
-        <p>Your one-time password for Login is:</p>
-        <h1 style="font-size: 32px; letter-spacing: 6px;">${otp}</h1>
-        <p>Valid for 10 minutes.</p>
-        <br />
-        <p>If you did not request this, please ignore.</p>
+  <div style="font-family: 'Arial', sans-serif; background: #f5f7fa; padding: 30px;">
+    <div style="max-width: 580px; margin: auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+      
+      <div style="background: linear-gradient(135deg, #0D4EFF, #1B71F9); padding: 25px; text-align: center; color: white;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 600;">NRIPROPERTY.UK</h1>
+        <p style="margin-top: 8px; font-size: 14px; opacity: 0.9;">Secure Login Verification</p>
       </div>
-      `,
+
+      <div style="padding: 30px;">
+        <p style="font-size: 16px; margin-bottom: 15px;">Hello <strong>${name}</strong>,</p>
+        <p style="font-size: 15px; line-height: 1.6;">Your One-Time Password (OTP) to login is:</p>
+
+        <div style="text-align: center; margin: 25px 0;">
+          <div style="display: inline-block; background: #EEF4FF; border: 2px dashed #0D4EFF; padding: 14px 26px; border-radius: 8px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #0D4EFF;">${otp}</span>
+          </div>
+          <p style="font-size: 13px; color: #555; margin-top: 8px; font-style: italic;">Valid for 10 minutes</p>
+        </div>
+
+        <p style="font-size: 14px; color: #444;">If you did not request this, you can safely ignore this email.</p>
+
+        <div style="margin-top: 25px; background: #f0f4ff; padding: 12px 16px; border-left: 4px solid #0D4EFF; border-radius: 6px;">
+          <p style="margin: 0; font-size: 14px; color: #0D4EFF;"><strong>Security Tip:</strong> Never share your OTP with anyone.</p>
+        </div>
+      </div>
+
+      <div style="background: #fafafa; text-align: center; padding: 18px; font-size: 12px; color: #777;">
+        © ${new Date().getFullYear()} NRIPROPERTY.UK • All Rights Reserved
+      </div>
+
+    </div>
+  </div>
+`,
     });
     console.log("✅ Email sent via Brevo API");
   } catch (error) {
