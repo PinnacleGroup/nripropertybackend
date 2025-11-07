@@ -139,7 +139,8 @@ router.post("/send-otp", async (req, res) => {
     const normalizedEmail = email.trim().toLowerCase();
     console.log("📧 Looking for email:", normalizedEmail);
 
-    // Check environment variables
+    //Check environment variables
+    /*
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
       console.error("❌ Missing environment variables:");
       console.error(
@@ -150,6 +151,14 @@ router.post("/send-otp", async (req, res) => {
         "SMTP_PASS:",
         process.env.SMTP_PASS ? "✓ Set" : "✗ Missing"
       );
+      return res.status(500).json({
+        success: false,
+        message: "Email service not configured. Please contact admin.",
+      });
+    }
+      */
+    if (!process.env.BREVO_API_KEY) {
+      console.error("❌ BREVO_API_KEY not configured in .env");
       return res.status(500).json({
         success: false,
         message: "Email service not configured. Please contact admin.",
@@ -218,8 +227,10 @@ router.post("/send-otp", async (req, res) => {
     );
 
     // ✅ FIX: Create transporter here, when we know env vars are loaded
+    /*
     console.log("📧 Creating email transporter...");
     const transporter = createTransporter();
+    */
 
     // Email options
     const mailOptions = {
