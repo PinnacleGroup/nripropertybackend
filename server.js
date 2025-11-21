@@ -128,7 +128,7 @@ import { fileURLToPath } from "url";
 // ✅ Routes (Old + New)
 import registerRoute from "./Routes/registerRoute.js";
 import checkEmailRoute from "./Routes/checkEmailRoute.js";
-import otpAuthRoute from "./Routes/otpAuthRoute.js"; // ← use NEW naming
+import otpAuthRoute from "./Routes/OtpAuthRoute.js"; // ← use NEW naming
 import dashboardRoute from "./Routes/dashboardRoute.js"; // ← NEW
 import viewsRouter from "./Routes/views.js";
 import ClientSupportRoute from "./Routes/ClientSupportRoute.js";
