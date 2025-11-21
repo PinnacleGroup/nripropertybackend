@@ -159,10 +159,10 @@ const __dirname = path.dirname(__filename);
 app.use(
   cors({
     origin: [
-      "http://localhost:5173",
-      "http://localhost:5000",
       "https://nriproperty.uk",
-      "https://www.nriproperty.uk"
+      "https://www.nriproperty.uk",
+      "http://localhost:5173",
+      "http://localhost:5000"
     ], 
     credentials: true,
   })

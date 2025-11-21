@@ -3,9 +3,6 @@ import mongoose from "mongoose";
 // ✅ New Queries Schema
 
 
-
-// ✅ New Queries Schema
-// ✅ New Queries Schema
 const ChatItemSchema = new mongoose.Schema(
   {
     sender: {
