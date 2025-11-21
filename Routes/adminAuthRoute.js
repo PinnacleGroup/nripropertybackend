@@ -1,7 +1,6 @@
 // Routes/adminAuthRoute.js
 import express from "express";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs"; // agar hash use kar rahe ho
 import AdminCred from "../Models/AdminCred.js";
 
 const router = express.Router();
@@ -10,7 +9,14 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1) Admin find karo
+    // 1) Basic validation
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and password are required" });
+    }
+
+    // 2) Admin find karo
     const admin = await AdminCred.findOne({ email });
 
     if (!admin) {
@@ -19,18 +25,14 @@ router.post("/login", async (req, res) => {
         .json({ success: false, message: "Invalid email or password" });
     }
 
-    // 2) Agar password plain-text store kiya hai:
-    // if (admin.password !== password) { ... }
-
-    // ✅ Better: password hash + compare
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) {
+    // 3) PLAIN TEXT compare (DB me bhi plain hai abhi)
+    if (password !== admin.password) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid email or password" });
     }
 
-    // 3) JWT generate karo
+    // 4) JWT generate karo
     const token = jwt.sign(
       {
         id: admin._id,
