@@ -1,5 +1,28 @@
 import mongoose from "mongoose";
 
+// 🧩 Embedded Chat Schema (per user)
+const ChatItemSchema = new mongoose.Schema(
+  {
+    sender: {
+      type: String,
+      enum: ["user", "admin"], // dono allowed
+      required: true,
+    },
+    text: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    _id: false, // har chat message ka alag _id nahi chahiye
+  }
+);
+
 const NewEnquirySchema = new mongoose.Schema(
   {
     name: String,
@@ -11,7 +34,7 @@ const NewEnquirySchema = new mongoose.Schema(
     message: String,
     createdAt: { type: Date, default: Date.now },
 
-    // ✅ This field must be included so client panel can read the saved contract
+    // ✅ Contracts info
     contracts: [
       {
         filePath: { type: String },
@@ -24,8 +47,14 @@ const NewEnquirySchema = new mongoose.Schema(
 
     isApproved: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
+
+    // ✅ NAYA FIELD: Chat history embedded inside user
+    chat: {
+      type: [ChatItemSchema],
+      default: [],
+    },
   },
-  { collection: "New_Queries" } // 👈 SAME collection as admin
+  { collection: "New_Queries" } // same collection
 );
 
 export default mongoose.model("NewEnquiry", NewEnquirySchema);

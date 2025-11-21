@@ -12,6 +12,17 @@ const __dirname = path.dirname(__filename);
 /**
  * ✅ Fetch the latest contract for the user
  */
+router.get("/history/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const contracts = await ContractModel.find({ userId }); // your contract model name
+    return res.json({ success: true, contracts });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
+
 router.get("/path/:email", async (req, res) => {
   try {
     const { email } = req.params;
@@ -37,13 +48,11 @@ router.get("/path/:email", async (req, res) => {
     console.log("✅ Final Contract URL:", fullUrl);
 
     return res.json({ contractPath: fullUrl });
-
   } catch (err) {
     console.error("❌ Error fetching contract:", err);
     res.status(500).json({ error: "Server error fetching contract." });
   }
 });
-
 
 /**
  * ✅ Upload Signed Contract (User Uploads Back)
@@ -69,7 +78,6 @@ router.post("/upload-signed-contract", upload, async (req, res) => {
   }
 });
 
-
 /**
  * ✅ DOWNLOAD CONTRACT → The one you wanted
  */
@@ -84,7 +92,9 @@ router.get("/download/:filename", (req, res) => {
   res.download(filePath, (err) => {
     if (err) {
       console.log("❌ Download Error:", err);
-      return res.status(404).json({ success: false, message: "File not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "File not found" });
     }
   });
 });

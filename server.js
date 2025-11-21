@@ -128,13 +128,26 @@ import { fileURLToPath } from "url";
 // ✅ Routes (Old + New)
 import registerRoute from "./Routes/registerRoute.js";
 import checkEmailRoute from "./Routes/checkEmailRoute.js";
-import otpAuthRoute from "./routes/otpAuthRoute.js"; // ← use NEW naming
+import otpAuthRoute from "./Routes/otpAuthRoute.js"; // ← use NEW naming
 import dashboardRoute from "./Routes/dashboardRoute.js"; // ← NEW
 import viewsRouter from "./Routes/views.js";
 import ClientSupportRoute from "./Routes/ClientSupportRoute.js";
 import contractRoutes from "./Routes/contractRoutes.js";
 import signedContractRoutes from "./Routes/signedContractRoutes.js";
 import New_Queries from "./Models/NewEnquirySchema.js";
+import newQueriesRoute from "./Admin/newQueriesRoute.js";
+import getApprovedUsersRoute from "./Admin/getApprovedUsersRoute.js";
+import uploadContractRoute from "./Admin/uploadContractRoute.js";
+
+// ✅ Admin Routes
+import adminDashboardRoutes from "./Admin/adminDashboardRoutes.js";
+import adminChatRoutes from "./Routes/adminChatRoutes.js";
+import adminSupportRoutes from "./Admin/adminSupportRoutes.js";
+import adminAuthRoute from "./Routes/adminAuthRoute.js";
+
+
+
+
 
 // ✅ Setup
 const app = express();
@@ -147,11 +160,10 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "http://localhost:3000",
+      "http://localhost:5000",
       "https://nriproperty.uk",
-      "https://www.nriproperty.uk",
-      "https://your-frontend-domain.com"
-    ],
+      "https://www.nriproperty.uk"
+    ], 
     credentials: true,
   })
 );
@@ -174,6 +186,15 @@ mongoose
     process.exit(1);
   });
 
+// Admin Routes
+
+app.use("/admin", adminDashboardRoutes);
+app.use("/admin", newQueriesRoute);
+app.use("/admin", getApprovedUsersRoute);
+app.use("/admin", uploadContractRoute);
+app.use("/admin", adminSupportRoutes);
+app.use("/admin", adminChatRoutes);
+app.use("/admin", adminAuthRoute);
 // 🛣️ ROUTES
 app.use("/api/views", viewsRouter);
 app.use("/api/register", registerRoute);
@@ -189,6 +210,8 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ✅ NEW Dashboard Route
 app.use("/api/dashboard", dashboardRoute);
+
+
 
 // ✅ NEW Check Email Logic (Merged)
 app.post("/api/check-email", async (req, res) => {
