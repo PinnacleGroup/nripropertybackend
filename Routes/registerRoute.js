@@ -86,12 +86,16 @@ router.post("/", async (req, res) => {
     console.log(`✅ Email sent to ${email}`);
 
     res.status(201).json({
+      success: true,
       message: "Enquiry submitted successfully",
       enquiryId: newEnquiry._id,
     });
   } catch (error) {
     console.error("❌ Error saving enquiry:", error);
-    res.status(500).json({ error: "Failed to save enquiry" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to save enquiry",
+    });
   }
 });
 

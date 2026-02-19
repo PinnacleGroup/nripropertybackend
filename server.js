@@ -33,8 +33,6 @@ import adminAuthRoute from "./Routes/adminAuthRoute.js";
 
 
 
-
-
 // ✅ Setup
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -96,8 +94,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ✅ NEW Dashboard Route
 app.use("/api/dashboard", dashboardRoute);
-
-
 
 // ✅ NEW Check Email Logic (Merged)
 app.post("/api/check-email", async (req, res) => {
