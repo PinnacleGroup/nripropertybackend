@@ -40,17 +40,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 🔒 CORS Setup
-app.use(
-  cors({
-    origin: [
-      "https://nriproperty.uk",
-      "https://www.nriproperty.uk",
-      "http://localhost:5173",
-      "http://localhost:5000"
-    ], 
-    credentials: true,
-  })
-);
+const allowedOrigins = new Set([
+  "https://nriproperty.uk",
+  "https://www.nriproperty.uk",
+  "http://localhost:5173",
+  "http://localhost:5000",
+]);
+
+const corsOptions = {
+  origin: (origin, cb) => {
+    // allow non-browser requests (no Origin header)
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.has(origin)) return cb(null, true);
+    return cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+};
+
+app.use(cors(corsOptions));
+// handle preflight for all routes
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
