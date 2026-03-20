@@ -8,12 +8,19 @@ dotenv.config();
 const router = express.Router();
 
 // Email transporter configuration
+// Prefer explicit SMTP host/port to avoid timeouts on cloud hosts.
+const smtpPort = Number(process.env.SMTP_PORT || 587);
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: smtpPort,
+  secure: smtpPort === 465, // true for 465, false for 587 (STARTTLS)
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
-  }
+  },
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 20000
 });
 
 // Generate 6-digit OTP
