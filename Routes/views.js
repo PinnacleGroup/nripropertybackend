@@ -8,7 +8,8 @@ const viewSchema = new mongoose.Schema({
   pageviews: { type: Number, default: 0 }
 });
 
-const ViewModel = mongoose.models.Page_Views || mongoose.model("Page_Views", viewSchema);
+const ViewModel =
+  mongoose.models.Page_Views || mongoose.model("Page_Views", viewSchema, "UK_Page_Views");
 
 // Get current view count
 router.get("/view", async (req, res) => {

@@ -70,7 +70,7 @@ export const New_Queries =
   mongoose.models.New_Queries || mongoose.model("New_Queries", NewQuerySchema, "New_Queries");
 
 export const Page_Views =
-  mongoose.models.Page_Views || mongoose.model("Page_Views", PageViewsSchema, "Page_Views");
+  mongoose.models.Page_Views || mongoose.model("Page_Views", PageViewsSchema, "UK_Page_Views");
 
 export const Support_Queries =
   mongoose.models.Support_Queries || mongoose.model("supportqueries", SupportQuerySchema, "supportqueries");
