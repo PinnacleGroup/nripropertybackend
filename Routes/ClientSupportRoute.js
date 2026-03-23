@@ -8,13 +8,19 @@ dotenv.config();
 
 const router = express.Router();
 
-// ✅ Create a transporter (Gmail)
+// ✅ Create a transporter (explicit host/port)
+const smtpPort = Number(process.env.SMTP_PORT || 587);
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: smtpPort,
+  secure: smtpPort === 465, // true for 465, false for 587 (STARTTLS)
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 20000,
 });
 
 // 🧩 POST /api/support
